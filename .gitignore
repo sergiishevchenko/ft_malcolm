@@ -1,0 +1,5 @@
+*.o
+ft_malcolm
+libft/libft.a
+.DS_Store
+compile_flags.txt
