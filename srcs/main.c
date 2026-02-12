@@ -20,17 +20,32 @@ int	main(int argc, char **argv)
 		return (1);
 	if (open_raw_socket(&ctx) != 0)
 		return (1);
-	if (listen_arp_request(&ctx) != 0)
+	if (ctx.gratuitous)
 	{
+		if (send_gratuitous_arp(&ctx) != 0)
+		{
+			close(ctx.sockfd);
+			return (1);
+		}
 		close(ctx.sockfd);
-		if (!g_running)
-			printf("\n");
-		return (!g_running ? 0 : 1);
+		return (0);
 	}
-	if (send_arp_reply(&ctx) != 0)
+	while (g_running)
 	{
-		close(ctx.sockfd);
-		return (1);
+		if (listen_arp_request(&ctx) != 0)
+		{
+			close(ctx.sockfd);
+			if (!g_running)
+				printf("\n");
+			return (!g_running ? 0 : 1);
+		}
+		if (send_arp_reply(&ctx) != 0)
+		{
+			close(ctx.sockfd);
+			return (1);
+		}
+		if (!ctx.continuous)
+			break ;
 	}
 	close(ctx.sockfd);
 	return (0);
