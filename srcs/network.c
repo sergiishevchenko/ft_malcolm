@@ -71,21 +71,17 @@ int	find_interface(t_malcolm *ctx)
 
 int	open_raw_socket(t_malcolm *ctx)
 {
-	struct sockaddr_ll	sll;
-
 	ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
 	if (ctx->sockfd < 0)
 	{
 		fprintf(stderr, "%s: socket: %s\n", PROGRAM_NAME, strerror(errno));
 		return (-1);
 	}
-	ft_bzero(&sll, sizeof(sll));
-	sll.sll_family = AF_PACKET;
-	sll.sll_ifindex = ctx->iface_index;
-	sll.sll_protocol = htons(ETH_P_ARP);
-	if (bind(ctx->sockfd, (struct sockaddr *)&sll, sizeof(sll)) < 0)
+	if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_BINDTODEVICE,
+			ctx->iface_name, ft_strlen(ctx->iface_name) + 1) < 0)
 	{
-		fprintf(stderr, "%s: bind: %s\n", PROGRAM_NAME, strerror(errno));
+		fprintf(stderr, "%s: setsockopt: %s\n", PROGRAM_NAME,
+			strerror(errno));
 		close(ctx->sockfd);
 		return (-1);
 	}

@@ -138,6 +138,5 @@ int	send_arp_reply(t_malcolm *ctx)
 		return (-1);
 	printf("Sent an ARP reply packet, you may now check "
 		"the arp table on the target.\n");
-	printf("Exiting program...\n");
 	return (0);
 }

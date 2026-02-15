@@ -16,7 +16,6 @@ static int	is_all_digits(const char *s)
 static int	parse_decimal_ip(const char *str, uint8_t *ip_out)
 {
 	unsigned long	val;
-	uint32_t		net;
 
 	val = 0;
 	while (*str)
@@ -26,8 +25,10 @@ static int	parse_decimal_ip(const char *str, uint8_t *ip_out)
 			return (-1);
 		str++;
 	}
-	net = htonl((uint32_t)val);
-	ft_memcpy(ip_out, &net, 4);
+	ip_out[0] = (val >> 24) & 0xFF;
+	ip_out[1] = (val >> 16) & 0xFF;
+	ip_out[2] = (val >> 8) & 0xFF;
+	ip_out[3] = val & 0xFF;
 	return (0);
 }
 

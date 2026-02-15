@@ -29,6 +29,9 @@ struct sockaddr_ll
 	unsigned char	sll_addr[8];
 };
 # endif
+# ifndef SO_BINDTODEVICE
+#  define SO_BINDTODEVICE 25
+# endif
 # include <netinet/in.h>
 # include <netdb.h>
 

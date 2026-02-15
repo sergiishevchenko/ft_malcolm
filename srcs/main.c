@@ -34,10 +34,14 @@ int	main(int argc, char **argv)
 	{
 		if (listen_arp_request(&ctx) != 0)
 		{
-			close(ctx.sockfd);
 			if (!g_running)
-				printf("\n");
-			return (!g_running ? 0 : 1);
+			{
+				printf("\nExiting program...\n");
+				close(ctx.sockfd);
+				return (0);
+			}
+			close(ctx.sockfd);
+			return (1);
 		}
 		if (send_arp_reply(&ctx) != 0)
 		{
@@ -47,6 +51,7 @@ int	main(int argc, char **argv)
 		if (!ctx.continuous)
 			break ;
 	}
+	printf("Exiting program...\n");
 	close(ctx.sockfd);
 	return (0);
 }
