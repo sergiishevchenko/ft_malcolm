@@ -14,19 +14,29 @@ SRCS	= ft_strlen.c \
 
 OBJS	= $(SRCS:.c=.o)
 
+GREEN	= \033[0;32m
+CYAN	= \033[0;36m
+YELLOW	= \033[0;33m
+RED		= \033[0;31m
+RESET	= \033[0m
+
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(AR) $(NAME) $(OBJS)
+	@$(AR) $(NAME) $(OBJS)
+	@printf "$(GREEN)✔ Archived $(NAME)$(RESET)\n"
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@printf "$(CYAN)  CC  $(RESET)$<\n"
 
 clean:
-	rm -f $(OBJS)
+	@rm -f $(OBJS)
+	@printf "$(YELLOW)✔ Cleaned libft objects$(RESET)\n"
 
 fclean: clean
-	rm -f $(NAME)
+	@rm -f $(NAME)
+	@printf "$(RED)✔ Removed $(NAME)$(RESET)\n"
 
 re: fclean all
 

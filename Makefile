@@ -19,24 +19,34 @@ SRCS		= $(SRC_DIR)/main.c \
 OBJS		= $(SRCS:.c=.o)
 LIBFT		= $(LIBFT_DIR)/libft.a
 
+GREEN		= \033[0;32m
+CYAN		= \033[0;36m
+YELLOW		= \033[0;33m
+RED			= \033[0;31m
+RESET		= \033[0m
+
 all: $(NAME)
 
 $(LIBFT):
-	$(MAKE) -C $(LIBFT_DIR)
+	@$(MAKE) -C $(LIBFT_DIR)
 
 $(NAME): $(LIBFT) $(OBJS)
-	$(CC) $(CFLAGS) -o $(NAME) $(OBJS) -L$(LIBFT_DIR) -lft
+	@$(CC) $(CFLAGS) -o $(NAME) $(OBJS) -L$(LIBFT_DIR) -lft
+	@printf "$(GREEN)✔ Linked $(NAME)$(RESET)\n"
 
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -I$(INC_DIR) -I$(LIBFT_DIR) -c $< -o $@
+	@$(CC) $(CFLAGS) -I$(INC_DIR) -I$(LIBFT_DIR) -c $< -o $@
+	@printf "$(CYAN)  CC  $(RESET)$<\n"
 
 clean:
-	$(MAKE) -C $(LIBFT_DIR) clean
-	rm -f $(OBJS)
+	@$(MAKE) -C $(LIBFT_DIR) clean
+	@rm -f $(OBJS)
+	@printf "$(YELLOW)✔ Cleaned objects$(RESET)\n"
 
 fclean: clean
-	$(MAKE) -C $(LIBFT_DIR) fclean
-	rm -f $(NAME)
+	@$(MAKE) -C $(LIBFT_DIR) fclean
+	@rm -f $(NAME)
+	@printf "$(RED)✔ Removed $(NAME)$(RESET)\n"
 
 re: fclean all
 
