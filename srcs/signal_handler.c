@@ -6,13 +6,24 @@ static void	sig_handler(int sig)
 	g_running = 0;
 }
 
-void	setup_signals(void)
+int	setup_signals(void)
 {
 	struct sigaction	sa;
 
 	ft_bzero(&sa, sizeof(sa));
 	sa.sa_handler = sig_handler;
 	sa.sa_flags = 0;
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
+	if (sigaction(SIGINT, &sa, NULL) < 0)
+	{
+		fprintf(stderr, "%s: sigaction: %s\n", PROGRAM_NAME,
+			strerror(errno));
+		return (-1);
+	}
+	if (sigaction(SIGTERM, &sa, NULL) < 0)
+	{
+		fprintf(stderr, "%s: sigaction: %s\n", PROGRAM_NAME,
+			strerror(errno));
+		return (-1);
+	}
+	return (0);
 }

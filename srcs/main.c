@@ -15,7 +15,8 @@ int	main(int argc, char **argv)
 	ctx.sockfd = -1;
 	if (parse_args(&ctx, argc, argv) != 0)
 		return (1);
-	setup_signals();
+	if (setup_signals() != 0)
+		return (1);
 	if (find_interface(&ctx) != 0)
 		return (1);
 	if (open_raw_socket(&ctx) != 0)

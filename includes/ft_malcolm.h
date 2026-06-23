@@ -99,7 +99,7 @@ int		open_raw_socket(t_malcolm *ctx);
 int		listen_arp_request(t_malcolm *ctx);
 int		send_arp_reply(t_malcolm *ctx);
 int		send_gratuitous_arp(t_malcolm *ctx);
-void	setup_signals(void);
+int		setup_signals(void);
 void	print_mac(const uint8_t *mac);
 void	print_ip(const uint8_t *ip);
 void	print_verbose_pkt(t_arp_packet *pkt, size_t len, int out);
