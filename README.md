@@ -10,7 +10,8 @@ An ARP spoofing tool written in C as part of the 42 school curriculum. The progr
 - [Building](#building)
 - [Usage](#usage)
 - [Options](#options)
-- [Example](#example)
+- [Examples](#examples)
+- [Bonus Features](#bonus-features)
 - [Testing](#testing)
 - [Project Structure](#project-structure)
 - [References](#references)
@@ -21,7 +22,7 @@ ARP (Address Resolution Protocol) maps IP addresses to MAC addresses on a local 
 
 1. Listening on the network for an ARP request from the **target** asking "Who has `<source_ip>`?"
 2. Responding with a forged ARP reply: "`<source_ip>` is at `<spoofed_mac>`"
-3. The target updates its ARP table with the spoofed entry and the program exits
+3. The target updates its ARP table with the spoofed entry
 
 This is one of the fundamental techniques behind Man-in-the-Middle (MITM) attacks at the Data Link Layer (OSI Layer 2).
 
@@ -34,7 +35,7 @@ Target                          ft_malcolm (Attacker)
   |                                    |
   |<-- Forged ARP Reply ---------------|  "<source_ip> is at <spoofed_mac>"
   |                                    |
-  [ARP table poisoned]                 [Exit]
+  [ARP table poisoned]                 [Exit or wait for next request]
 ```
 
 The program operates at the raw socket level, constructing Ethernet frames and ARP packets manually. It uses `AF_PACKET` / `SOCK_RAW` to send and receive frames directly on the network interface.
@@ -60,27 +61,31 @@ The binary `ft_malcolm` will be created in the project root.
 ## Usage
 
 ```
-sudo ./ft_malcolm [options] <source_ip> <source_mac> <target_ip> <target_mac>
+sudo ./ft_malcolm [-v] [-c] [-g] [-i interface] <source_ip> <source_mac> <target_ip> <target_mac>
 ```
 
 | Argument       | Description                                           |
 |----------------|-------------------------------------------------------|
-| `source_ip`    | IP address to impersonate                             |
+| `source_ip`    | IP address to impersonate (dotted, decimal, or hostname) |
 | `source_mac`   | MAC address to associate with the source IP (spoofed) |
-| `target_ip`    | IP address of the victim host                         |
+| `target_ip`    | IP address of the victim host (dotted, decimal, or hostname) |
 | `target_mac`   | MAC address of the victim host                        |
 
-- **IP addresses** must be in standard IPv4 dotted-decimal notation (e.g. `192.168.1.10`)
-- **MAC addresses** must be in colon-separated hexadecimal notation (e.g. `aa:bb:cc:dd:ee:ff`)
+- **IP addresses**: standard IPv4 dotted-decimal (`192.168.1.10`), decimal notation (`3232235786`), or resolvable hostname (`myhost`)
+- **MAC addresses**: colon-separated hexadecimal notation (`aa:bb:cc:dd:ee:ff`)
 
 ## Options
 
-| Flag            | Description                                      |
-|-----------------|--------------------------------------------------|
-| `-v, --verbose` | Enable verbose output with detailed packet dumps |
-| `-i <iface>`    | Specify the network interface to use             |
+| Flag                     | Description                                                    |
+|--------------------------|----------------------------------------------------------------|
+| `-v`, `--verbose`        | Enable verbose output with detailed packet dumps and hex dump  |
+| `-c`, `--continuous`     | Keep running and respond to every matching ARP request          |
+| `-g`, `--gratuitous`     | Send a gratuitous ARP broadcast immediately and exit            |
+| `-i <iface>`             | Specify the network interface to use (auto-detected if omitted) |
 
-## Example
+## Examples
+
+### Basic ARP Spoofing
 
 **On the attacker machine (VM1):**
 
@@ -119,6 +124,66 @@ arp -a
 # Should show: 10.11.11.1 at aa:bb:cc:dd:ee:ff
 ```
 
+### Continuous Mode
+
+Respond to every matching ARP request instead of exiting after the first one:
+
+```bash
+sudo ./ft_malcolm -c 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+# Press Ctrl+C to stop
+```
+
+### Gratuitous ARP
+
+Send a gratuitous ARP broadcast immediately without waiting for a request:
+
+```bash
+sudo ./ft_malcolm -g 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+```
+
+```
+Sending gratuitous ARP for 10.11.11.1 with mac aa:bb:cc:dd:ee:ff...
+Gratuitous ARP sent.
+Exiting program...
+```
+
+### Combined Flags
+
+```bash
+sudo ./ft_malcolm -v -c -i eth0 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+```
+
+## Bonus Features
+
+### Decimal IPv4 Notation
+
+IP addresses can be specified as a single decimal number instead of dotted-decimal notation:
+
+```bash
+# 168430090 in decimal = 10.11.11.10 in dotted notation
+sudo ./ft_malcolm 168430090 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+```
+
+### Hostname Resolution
+
+Hostnames are resolved to IPv4 addresses via `getaddrinfo`:
+
+```bash
+sudo ./ft_malcolm localhost de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+# Resolves "localhost" to 127.0.0.1
+
+sudo ./ft_malcolm 10.0.2.10 de:ad:be:ef:00:01 myhost 08:00:27:dd:ee:ff
+# Resolves "myhost" via DNS/hosts
+```
+
+### Verbose Mode
+
+With `-v`, every received/sent ARP packet is printed with full details:
+- Ethernet header (src/dst MAC, EtherType)
+- ARP header (opcode, hardware type, protocol type)
+- Sender and target MAC/IP addresses
+- Full hex dump of the raw packet
+
 ## Testing
 
 ### Setup
@@ -151,6 +216,9 @@ ip addr show
 - Run without root — should display an error
 - Wrong number of arguments — should display usage
 - Invalid IP or MAC — should display a specific error message
+- Invalid hostname — should display "unknown host or invalid IP address"
+- Unknown option — should display "unknown option" error
+- Missing `-i` argument — should display "-i requires an argument"
 - Ctrl+C during operation — should exit cleanly
 - ARP requests from unrelated hosts — should be ignored
 
@@ -165,19 +233,22 @@ ft_malcolm/
 │   ├── Makefile
 │   ├── libft.h
 │   └── *.c
-└── srcs/
-    ├── main.c               # Entry point, privilege check, orchestration
-    ├── parsing.c            # Command-line argument parsing
-    ├── validation.c         # IP and MAC address validation
-    ├── network.c            # Interface discovery and raw socket setup
-    ├── arp.c                # ARP request listening and reply sending
-    ├── signal_handler.c     # SIGINT handler for graceful shutdown
-    ├── utils.c              # Printing helpers (MAC, IP formatting)
-    └── verbose.c            # Verbose packet dump output
+├── srcs/
+│   ├── main.c               # Entry point, privilege check, orchestration
+│   ├── parsing.c            # Option and positional argument parsing
+│   ├── validation.c         # IP (dotted/decimal/hostname) and MAC validation
+│   ├── network.c            # Interface discovery and raw socket setup
+│   ├── arp.c                # ARP request listener, reply/gratuitous sender
+│   ├── signal_handler.c     # SIGINT/SIGTERM handler for graceful shutdown
+│   ├── utils.c              # MAC and IP formatting helpers
+│   └── verbose.c            # Verbose packet dump and hex output
+└── docs/
+    └── EVALUATION.md        # Step-by-step evaluation guide
 ```
 
 ## References
 
 - [RFC 826 — An Ethernet Address Resolution Protocol](https://datatracker.ietf.org/doc/html/rfc826)
 - [RFC 7042 — IANA Considerations and IETF Protocol and Documentation Usage for IEEE 802 Parameters](https://datatracker.ietf.org/doc/html/rfc7042)
+- [RFC 5227 — IPv4 Address Conflict Detection](https://datatracker.ietf.org/doc/html/rfc5227) (gratuitous ARP)
 - [Wikipedia — ARP spoofing](https://en.wikipedia.org/wiki/ARP_spoofing)
