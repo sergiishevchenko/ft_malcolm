@@ -20,9 +20,9 @@ static int	is_matching_request(t_arp_packet *pkt, t_malcolm *ctx)
 static void	print_request_info(t_arp_packet *pkt)
 {
 	printf("An ARP request has been broadcast.\n");
-	printf("    mac address of request: ");
+	printf("mac address of request: ");
 	print_mac(pkt->arp.sender_mac);
-	printf("\n    IP address of request: ");
+	printf("\nIP address of request: ");
 	print_ip(pkt->arp.sender_ip);
 	printf("\n");
 }
