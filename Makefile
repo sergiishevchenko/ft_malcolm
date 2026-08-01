@@ -73,5 +73,6 @@ test: $(LIBFT) $(OBJ_NO_MAIN) $(TEST_OBJS)
 
 tclean:
 	@rm -f $(TEST_OBJS) $(TEST_BIN)
+	@printf "$(YELLOW)✔ Cleaned tests$(RESET)\n"
 
 .PHONY: all clean fclean re test tclean
