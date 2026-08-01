@@ -9,9 +9,11 @@ LIBFT_DIR	= libft
 
 SRCS		= $(SRC_DIR)/main.c \
 			  $(SRC_DIR)/parsing.c \
-			  $(SRC_DIR)/validation.c \
+			  $(SRC_DIR)/validate_ip.c \
+			  $(SRC_DIR)/validate_mac.c \
 			  $(SRC_DIR)/network.c \
-			  $(SRC_DIR)/arp.c \
+			  $(SRC_DIR)/arp_listen.c \
+			  $(SRC_DIR)/arp_send.c \
 			  $(SRC_DIR)/signal_handler.c \
 			  $(SRC_DIR)/utils.c \
 			  $(SRC_DIR)/verbose.c
