@@ -52,4 +52,26 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+TEST_DIR	= tests
+TEST_SRCS	= $(TEST_DIR)/test_main.c \
+			  $(TEST_DIR)/test_validate_ip.c \
+			  $(TEST_DIR)/test_validate_mac.c \
+			  $(TEST_DIR)/test_parsing.c
+TEST_OBJS	= $(TEST_SRCS:.c=.o)
+TEST_BIN	= run_tests
+
+SRC_NO_MAIN	= $(filter-out $(SRC_DIR)/main.c, $(SRCS))
+OBJ_NO_MAIN	= $(SRC_NO_MAIN:.c=.o)
+
+$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
+	@$(CC) $(CFLAGS) -I$(INC_DIR) -I$(LIBFT_DIR) -I$(TEST_DIR) -c $< -o $@
+
+test: $(LIBFT) $(OBJ_NO_MAIN) $(TEST_OBJS)
+	@$(CC) $(CFLAGS) -o $(TEST_BIN) $(OBJ_NO_MAIN) $(TEST_OBJS) -L$(LIBFT_DIR) -lft
+	@./$(TEST_BIN)
+	@rm -f $(TEST_BIN)
+
+tclean:
+	@rm -f $(TEST_OBJS) $(TEST_BIN)
+
+.PHONY: all clean fclean re test tclean
