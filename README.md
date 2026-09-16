@@ -5,6 +5,7 @@ An ARP spoofing tool written in C as part of the 42 school curriculum. The progr
 ## Table of Contents
 
 - [Overview](#overview)
+- [Project Structure](#project-structure)
 - [How It Works](#how-it-works)
 - [Requirements](#requirements)
 - [Building](#building)
@@ -13,7 +14,6 @@ An ARP spoofing tool written in C as part of the 42 school curriculum. The progr
 - [Examples](#examples)
 - [Bonus Features](#bonus-features)
 - [Testing](#testing)
-- [Project Structure](#project-structure)
 - [References](#references)
 
 ## Overview
@@ -25,6 +25,39 @@ ARP (Address Resolution Protocol) maps IP addresses to MAC addresses on a local 
 3. The target updates its ARP table with the spoofed entry
 
 This is one of the fundamental techniques behind Man-in-the-Middle (MITM) attacks at the Data Link Layer (OSI Layer 2).
+
+## Project Structure
+
+```
+ft_malcolm/
+├── Makefile
+├── includes/
+│   └── ft_malcolm.h        # Main header: structs, prototypes, constants
+├── libft/                   # Minimal utility library
+│   ├── Makefile
+│   ├── libft.h
+│   └── *.c
+├── srcs/
+│   ├── main.c               # Entry point, privilege check, orchestration
+│   ├── parsing.c            # Option and positional argument parsing
+│   ├── validate_ip.c        # IP: dotted / decimal / hostname
+│   ├── validate_mac.c       # MAC XX:XX:XX:XX:XX:XX
+│   ├── network.c            # Interface discovery and raw socket setup
+│   ├── arp_listen.c         # ARP request filter and listener
+│   ├── arp_send.c           # Forged reply and gratuitous ARP
+│   ├── signal_handler.c     # SIGINT/SIGTERM handler for graceful shutdown
+│   ├── utils.c              # MAC and IP formatting helpers
+│   └── verbose.c            # Verbose packet dump and hex output
+├── tests/                   # Unit tests for validation and parsing
+└── docs/
+    ├── ru/
+    │   ├── ARP.md           # ARP protocol (RU)
+    │   └── HOW_IT_WORKS.md  # How the program works (RU)
+    ├── CODE.ru.md           # Annotated sources (RU)
+    ├── ARCHITECTURE.md
+    ├── EVALUATION.md
+    └── TESTING.md
+```
 
 ## How It Works
 
@@ -221,30 +254,6 @@ ip addr show
 - Missing `-i` argument — should display "-i requires an argument"
 - Ctrl+C during operation — should exit cleanly
 - ARP requests from unrelated hosts — should be ignored
-
-## Project Structure
-
-```
-ft_malcolm/
-├── Makefile
-├── includes/
-│   └── ft_malcolm.h        # Main header: structs, prototypes, constants
-├── libft/                   # Minimal utility library
-│   ├── Makefile
-│   ├── libft.h
-│   └── *.c
-├── srcs/
-│   ├── main.c               # Entry point, privilege check, orchestration
-│   ├── parsing.c            # Option and positional argument parsing
-│   ├── validation.c         # IP (dotted/decimal/hostname) and MAC validation
-│   ├── network.c            # Interface discovery and raw socket setup
-│   ├── arp.c                # ARP request listener, reply/gratuitous sender
-│   ├── signal_handler.c     # SIGINT/SIGTERM handler for graceful shutdown
-│   ├── utils.c              # MAC and IP formatting helpers
-│   └── verbose.c            # Verbose packet dump and hex output
-└── docs/
-    └── EVALUATION.md        # Step-by-step evaluation guide
-```
 
 ## References
 
