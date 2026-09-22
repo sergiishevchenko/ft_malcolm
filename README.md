@@ -53,7 +53,6 @@ ft_malcolm/
     ├── ru/
     │   ├── ARP.md           # ARP protocol (RU)
     │   └── HOW_IT_WORKS.md  # How the program works (RU)
-    ├── CODE.ru.md           # Annotated sources (RU)
     ├── ARCHITECTURE.md
     ├── EVALUATION.md
     └── TESTING.md

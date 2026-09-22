@@ -492,5 +492,4 @@ Who has 10.0.2.10? Tell 10.0.2.20
 Связанные доки репозитория:
 
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — как ft_malcolm собирает и шлёт эти кадры
-- [../CODE.ru.md](../CODE.ru.md) — исходники с построчными комментариями
 - [../ARCHITECTURE.md](../ARCHITECTURE.md) — архитектурный walkthrough (EN)

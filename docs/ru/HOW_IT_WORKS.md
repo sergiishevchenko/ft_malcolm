@@ -590,7 +590,6 @@ ft_malcolm/
     ├── ru/
     │   ├── ARP.md             # протокол ARP
     │   └── HOW_IT_WORKS.md    # этот файл
-    ├── CODE.ru.md             # исходники с построчными комментариями
     ├── ARCHITECTURE.md
     ├── EVALUATION.md
     └── TESTING.md
@@ -726,7 +725,6 @@ ip neigh show
 | Документ | Содержание |
 |----------|------------|
 | [ARP.md](ARP.md) | протокол ARP: кэш, кадр, Request/Reply, уязвимость |
-| [../CODE.ru.md](../CODE.ru.md) | весь код `srcs/` + `includes/` с комментариями |
 | [../../README.md](../../README.md) | обзор, usage, примеры (EN) |
 | [../ARCHITECTURE.md](../ARCHITECTURE.md) | архитектурный walkthrough (EN) |
 | [../EVALUATION.md](../EVALUATION.md) | чеклист для защиты / peer review |
