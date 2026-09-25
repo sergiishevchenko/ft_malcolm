@@ -51,10 +51,11 @@ ft_malcolm/
 ├── tests/                   # Unit tests for validation and parsing
 └── docs/
     ├── ru/
-    │   ├── ARP.md           # ARP protocol (RU)
-    │   ├── MAC_IP.md        # MAC and IPv4 addresses (RU)
-    │   ├── L2.md            # Layer 2 segment (RU)
-    │   └── HOW_IT_WORKS.md  # How the program works (RU)
+    │   ├── ARP.md           # ARP protocol
+    │   ├── MAC_IP.md        # MAC and IPv4 addresses
+    │   ├── L2.md            # Layer 2 segment
+    │   ├── NIC.md           # NIC and Ethernet frame
+    │   └── HOW_IT_WORKS.md  # How the program works
     ├── ARCHITECTURE.md
     ├── EVALUATION.md
     └── TESTING.md

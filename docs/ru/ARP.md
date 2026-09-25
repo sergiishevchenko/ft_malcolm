@@ -492,6 +492,7 @@ Who has 10.0.2.10? Tell 10.0.2.20
 Связанные доки репозитория:
 
 - [MAC_IP.md](MAC_IP.md) — MAC и IPv4: формат, маска, где лежат в кадре
+- [NIC.md](NIC.md) — карта и Ethernet-кадр
 - [L2.md](L2.md) — сегмент, свитч, broadcast domain
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — как ft_malcolm собирает и шлёт эти кадры
 - [../ARCHITECTURE.md](../ARCHITECTURE.md) — архитектурный walkthrough (EN)
