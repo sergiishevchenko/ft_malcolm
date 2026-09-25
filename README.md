@@ -52,6 +52,8 @@ ft_malcolm/
 └── docs/
     ├── ru/
     │   ├── ARP.md           # ARP protocol (RU)
+    │   ├── MAC_IP.md        # MAC and IPv4 addresses (RU)
+    │   ├── L2.md            # Layer 2 segment (RU)
     │   └── HOW_IT_WORKS.md  # How the program works (RU)
     ├── ARCHITECTURE.md
     ├── EVALUATION.md

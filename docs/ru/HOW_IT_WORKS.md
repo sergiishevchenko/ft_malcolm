@@ -589,6 +589,8 @@ ft_malcolm/
 └── docs/
     ├── ru/
     │   ├── ARP.md             # протокол ARP
+    │   ├── MAC_IP.md          # MAC и IPv4
+    │   ├── L2.md              # сеть канального уровня
     │   └── HOW_IT_WORKS.md    # этот файл
     ├── ARCHITECTURE.md
     ├── EVALUATION.md
@@ -725,6 +727,8 @@ ip neigh show
 | Документ | Содержание |
 |----------|------------|
 | [ARP.md](ARP.md) | протокол ARP: кэш, кадр, Request/Reply, уязвимость |
+| [MAC_IP.md](MAC_IP.md) | MAC и IPv4: формат, маска, кадр |
+| [L2.md](L2.md) | сегмент, свитч, VLAN, граница L2 |
 | [../../README.md](../../README.md) | обзор, usage, примеры (EN) |
 | [../ARCHITECTURE.md](../ARCHITECTURE.md) | архитектурный walkthrough (EN) |
 | [../EVALUATION.md](../EVALUATION.md) | чеклист для защиты / peer review |
