@@ -53,10 +53,16 @@ cd ft_malcolm
 
 # Build the project
 make
+make all      # must also work (explicit default target)
 
 # Verify executable name
 ls -la ft_malcolm
 # Expected: executable file named "ft_malcolm"
+
+# Verify no relink
+make
+# Expected: "make: Nothing to be done for 'all'." (or similar)
+# Must NOT recompile or relink anything
 
 # Verify rules
 make clean      # removes .o files, keeps executable
@@ -100,6 +106,17 @@ sudo ./ft_malcolm a
 sudo ./ft_malcolm a b c
 sudo ./ft_malcolm a b c d e f
 sudo ./ft_malcolm "" "" "" ""
+
+# Unknown option
+sudo ./ft_malcolm --unknown 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
+# Expected: "ft_malcolm: unknown option: --unknown"
+```
+
+### 1.5 Unit Tests (optional)
+
+```bash
+make test
+# Runs validation and parsing tests (no root required)
 ```
 
 ---
@@ -262,12 +279,19 @@ arping -c 1 -I enp0s1 192.168.65.14
 
 Now ft_malcolm should respond and exit.
 
-### 3.7 Ctrl+C Handling
+### 3.7 Ctrl+C and SIGTERM Handling
 
 ```bash
 sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 # While it waits, press Ctrl+C
 # Expected: clean exit with "Exiting program..." message, no crash
+```
+
+```bash
+# In another terminal, send SIGTERM to the running process
+sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa &
+kill $!
+# Expected: same clean exit with "Exiting program..." message
 ```
 
 ---
@@ -317,7 +341,11 @@ Then trigger the ARP request from VM2. Expected: detailed output for each receiv
 - Sender/target MAC and IP
 - Full hex dump of the packet
 
-Both `--verbose` and `-v` should work.
+Long form must also work:
+
+```bash
+sudo ./ft_malcolm --verbose 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
+```
 
 ---
 
@@ -336,6 +364,12 @@ arping -c 5 -I enp0s1 192.168.65.14
 
 Expected: ft_malcolm responds to **each** matching ARP request (does NOT exit after the first one). Use Ctrl+C to stop.
 
+Long form:
+
+```bash
+sudo ./ft_malcolm --continuous 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
+```
+
 ### 7.2 Gratuitous ARP (`-g` / `--gratuitous`)
 
 ```bash
@@ -343,6 +377,12 @@ sudo ./ft_malcolm -g 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e
 ```
 
 Expected: sends a gratuitous ARP immediately (broadcast, no waiting) and exits. On VM2 the kernel still ignores that broadcast unless an entry for `192.168.65.14` already exists. Confirm the cache with the `ping` check from section 3.5.
+
+Long form:
+
+```bash
+sudo ./ft_malcolm --gratuitous 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
+```
 
 ### 7.3 Interface Selection (`-i`)
 
