@@ -5,6 +5,7 @@ An ARP spoofing tool written in C as part of the 42 school curriculum. The progr
 ## Table of Contents
 
 - [Overview](#overview)
+- [Status](#status)
 - [Project Structure](#project-structure)
 - [How It Works](#how-it-works)
 - [Requirements](#requirements)
@@ -25,6 +26,26 @@ ARP (Address Resolution Protocol) maps IP addresses to MAC addresses on a local 
 3. The target updates its ARP table with the spoofed entry
 
 This is one of the fundamental techniques behind Man-in-the-Middle (MITM) attacks at the Data Link Layer (OSI Layer 2).
+
+## Status
+
+| Item | Part | Status |
+|------|------|--------|
+| Executable `ft_malcolm`, Makefile (`all`, `clean`, `fclean`, `re`), `-Wall -Wextra -Werror` | Mandatory | Done |
+| At most one global variable (`g_running`) | Mandatory | Done |
+| Root check, usage message, invalid IP/MAC errors, no crash on bad input | Mandatory | Done |
+| Four arguments, in order: source IP, source MAC, target IP, target MAC | Mandatory | Done |
+| Wait for a broadcast ARP request from the target for the source IP, send one spoofed reply, exit | Mandatory | Done |
+| Clean exit on Ctrl+C and SIGTERM | Mandatory | Done |
+| Decimal IPv4 notation | Bonus | Done |
+| Hostname resolution via `getaddrinfo` | Bonus | Done |
+| Verbose packet dump (`-v`, `--verbose`) | Bonus | Done |
+| Continuous mode (`-c`, `--continuous`) | Bonus | Done |
+| Gratuitous ARP (`-g`, `--gratuitous`) | Bonus | Done |
+| Interface selection (`-i`) | Bonus | Done |
+| Unit tests (`make test`) | Extra | Done |
+
+Step-by-step checks for the lab (`192.168.65.14` / `192.168.65.15`, interface `enp0s1`) are in [docs/EVALUATION.md](docs/EVALUATION.md).
 
 ## Project Structure
 
@@ -50,6 +71,7 @@ ft_malcolm/
 │   └── verbose.c            # Verbose packet dump and hex output
 ├── tests/                   # Unit tests for validation and parsing
 └── docs/
+    ├── en.subject.pdf       # Project subject
     ├── ru/
     │   ├── ARP.md           # ARP protocol
     │   ├── MAC_IP.md        # MAC and IPv4 addresses
@@ -89,6 +111,7 @@ make        # Build the project
 make clean  # Remove object files
 make fclean # Remove object files and the binary
 make re     # Rebuild from scratch
+make test   # Unit tests for IP, MAC, and argument parsing (no root)
 ```
 
 The binary `ft_malcolm` will be created in the project root.
@@ -120,43 +143,59 @@ sudo ./ft_malcolm [-v] [-c] [-g] [-i interface] <source_ip> <source_mac> <target
 
 ## Examples
 
+Lab addresses used below:
+
+| Role | Interface | IP | MAC |
+|------|-----------|----|-----|
+| Attacker (VM1) | `enp0s1` | `192.168.65.14` | `aa:77:fb:2e:e0:ed` |
+| Target (VM2) | `enp0s1` | `192.168.65.15` | `aa:77:fb:2e:e0:aa` |
+| Spoofed MAC | | | `de:ad:be:ef:00:01` |
+
+`source_ip` is the attacker's own address. Its kernel also answers ARP for `192.168.65.14` with `aa:77:fb:2e:e0:ed`.
+
 ### Basic ARP Spoofing
 
-**On the attacker machine (VM1):**
+**On the attacker (VM1):**
 
 ```bash
-# Spoof the ARP entry for 10.11.11.1 on the target 10.11.11.2
-sudo ./ft_malcolm 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
-The program will print:
+Until a matching request arrives, the only line is:
+
 ```
-Found available interface: eth0
-Waiting for ARP request...
+Found available interface: enp0s1
 ```
 
-**On the target machine (VM2):**
+**On the target (VM2):**
 
 ```bash
-# Trigger an ARP request for 10.11.11.1
-arping -I eth0 10.11.11.1
+arping -c 1 -I enp0s1 192.168.65.14
 ```
 
-**Back on VM1**, `ft_malcolm` will detect the request and respond:
+**Back on VM1:**
+
 ```
+Found available interface: enp0s1
 An ARP request has been broadcast.
-    mac address of request: 08:00:27:xx:xx:xx
-    IP address of request: 10.11.11.2
+mac address of request: aa:77:fb:2e:e0:aa
+IP address of request: 192.168.65.15
 Now sending an ARP reply to the target address with spoofed source, please wait...
 Sent an ARP reply packet, you may now check the arp table on the target.
 Exiting program...
 ```
 
-**Verify on VM2:**
+`arping` does not install a kernel neighbor entry. To see the cache, leave the program running with `-c` on VM1 and on VM2 run:
 
 ```bash
-arp -a
-# Should show: 10.11.11.1 at aa:bb:cc:dd:ee:ff
+ping -c 1 -W 1 192.168.65.14
+ip neigh show 192.168.65.14
+```
+
+Expected:
+
+```
+192.168.65.14 dev enp0s1 lladdr de:ad:be:ef:00:01 REACHABLE
 ```
 
 ### Continuous Mode
@@ -164,28 +203,31 @@ arp -a
 Respond to every matching ARP request instead of exiting after the first one:
 
 ```bash
-sudo ./ft_malcolm -c 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+sudo ./ft_malcolm -c 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 # Press Ctrl+C to stop
 ```
 
 ### Gratuitous ARP
 
-Send a gratuitous ARP broadcast immediately without waiting for a request:
+Send one broadcast ARP reply immediately, without waiting for a request, then exit:
 
 ```bash
-sudo ./ft_malcolm -g 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+sudo ./ft_malcolm -g 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
 ```
-Sending gratuitous ARP for 10.11.11.1 with mac aa:bb:cc:dd:ee:ff...
+Found available interface: enp0s1
+Sending gratuitous ARP for 192.168.65.14 with mac de:ad:be:ef:00:01...
 Gratuitous ARP sent.
 Exiting program...
 ```
 
 ### Combined Flags
 
+`-v` stays silent until an ARP frame is received or sent. `-c` keeps listening after each reply.
+
 ```bash
-sudo ./ft_malcolm -v -c -i eth0 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27:xx:xx:xx
+sudo ./ft_malcolm -v -c -i enp0s1 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
 ## Bonus Features
@@ -195,8 +237,8 @@ sudo ./ft_malcolm -v -c -i eth0 10.11.11.1 aa:bb:cc:dd:ee:ff 10.11.11.2 08:00:27
 IP addresses can be specified as a single decimal number instead of dotted-decimal notation:
 
 ```bash
-# 168430090 in decimal = 10.11.11.10 in dotted notation
-sudo ./ft_malcolm 168430090 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+# 3232252174 = 192.168.65.14
+sudo ./ft_malcolm 3232252174 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
 ### Hostname Resolution
@@ -204,10 +246,10 @@ sudo ./ft_malcolm 168430090 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
 Hostnames are resolved to IPv4 addresses via `getaddrinfo`:
 
 ```bash
-sudo ./ft_malcolm localhost de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+sudo ./ft_malcolm localhost de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 # Resolves "localhost" to 127.0.0.1
 
-sudo ./ft_malcolm 10.0.2.10 de:ad:be:ef:00:01 myhost 08:00:27:dd:ee:ff
+sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 myhost aa:77:fb:2e:e0:aa
 # Resolves "myhost" via DNS/hosts
 ```
 
@@ -233,11 +275,11 @@ With `-v`, every received/sent ARP packet is printed with full details:
 # View ARP table
 arp -a
 
-# Send ARP request
-arping -I eth0 <target_ip>
+# Send one ARP request from the target
+arping -c 1 -I enp0s1 192.168.65.14
 
 # Monitor ARP traffic
-sudo tcpdump -i eth0 -n arp
+sudo tcpdump -i enp0s1 -n -e arp
 
 # Flush ARP cache
 sudo ip -s -s neigh flush all
