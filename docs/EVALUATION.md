@@ -488,5 +488,20 @@ sudo ./ft_malcolm -i
 
 ```bash
 sudo ./ft_malcolm -v -c -i enp0s1 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
-# Expected: verbose + continuous mode on interface enp0s1
 ```
+
+Until an ARP frame arrives, the only line is:
+
+```
+Found available interface: enp0s1
+```
+
+`-v` prints a packet when one is received or sent. `-c` keeps the process in `recvfrom` after each reply. `-i enp0s1` is the interface named above; with a single UP interface the same name appears without `-i`.
+
+On **VM2**:
+
+```bash
+arping -c 2 -I enp0s1 192.168.65.14
+```
+
+On **VM1**, each of those requests produces a `[VERBOSE] Received ARP packet` block (Ethernet header, ARP opcode, sender/target, hex dump), then the usual reply text and a `[VERBOSE] Sending ARP packet` block. After the second reply the program is still running. Stop it with Ctrl+C (`Exiting program...`).
