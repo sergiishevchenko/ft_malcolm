@@ -75,6 +75,7 @@ ft_malcolm/
     ├── ru/
     │   ├── ARP.md           # ARP protocol
     │   ├── MAC_IP.md        # MAC and IPv4 addresses
+    │   ├── MASK.md          # Subnet mask
     │   ├── L2.md            # Layer 2 segment
 │   ├── NIC.md           # NIC and Ethernet frame
 │   ├── VM_NETWORK.md    # Mac and VM networks

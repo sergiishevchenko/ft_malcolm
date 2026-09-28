@@ -836,6 +836,7 @@ ip neigh show 192.168.65.14
 |----------|------------|
 | [ARP.md](ARP.md) | протокол ARP: кэш, кадр, Request/Reply, уязвимость |
 | [MAC_IP.md](MAC_IP.md) | MAC и IPv4: формат, маска, кадр |
+| [MASK.md](MASK.md) | маска `/24`: сеть, хост, сосед и шлюз |
 | [L2.md](L2.md) | сегмент, свитч, VLAN, граница L2 |
 | [NIC.md](NIC.md) | сетевая карта и Ethernet-кадр |
 | [VM_NETWORK.md](VM_NETWORK.md) | где стоят Mac и две виртуалки |
