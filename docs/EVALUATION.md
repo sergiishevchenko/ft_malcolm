@@ -372,13 +372,94 @@ sudo ./ft_malcolm --continuous 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:
 
 ### 7.2 Gratuitous ARP (`-g` / `--gratuitous`)
 
+`-g` skips the listen loop. The program sends one broadcast ARP reply and exits. Nobody on VM2 has to run `arping`. `-c` has no effect together with `-g`: `main` returns before the listen loop.
+
+The reply is gratuitous because `sender_ip` and `target_ip` are both `192.168.65.14`:
+
+| Field | Value |
+|---|---|
+| Ethernet dest | `ff:ff:ff:ff:ff:ff` |
+| Ethernet src | `de:ad:be:ef:00:01` |
+| ARP opcode | reply (2) |
+| ARP sender MAC / IP | `de:ad:be:ef:00:01` / `192.168.65.14` |
+| ARP target MAC | `ff:ff:ff:ff:ff:ff` |
+| ARP target IP | `192.168.65.14` |
+
+#### 7.2.1 Watch the wire
+
+On **VM1**, in a second terminal, before starting the program:
+
+```bash
+sudo tcpdump -i enp0s1 -n -e arp
+```
+
+On **VM1**:
+
 ```bash
 sudo ./ft_malcolm -g 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
-Expected: sends a gratuitous ARP immediately (broadcast, no waiting) and exits. On VM2 the kernel still ignores that broadcast unless an entry for `192.168.65.14` already exists. Confirm the cache with the `ping` check from section 3.5.
+Expected output, then the process ends by itself:
 
-Long form:
+```
+Found available interface: enp0s1
+Sending gratuitous ARP for 192.168.65.14 with mac de:ad:be:ef:00:01...
+Gratuitous ARP sent.
+Exiting program...
+```
+
+Expected `tcpdump` line (source MAC is the spoofed one, destination is broadcast):
+
+```
+de:ad:be:ef:00:01 > Broadcast, ethertype ARP (0x0806), length 42: Reply 192.168.65.14 is-at de:ad:be:ef:00:01, length 28
+```
+
+The same frame must show up if `tcpdump` is running on **VM2** (`enp0s1`). That confirms the broadcast left VM1 and reached the target.
+
+#### 7.2.2 Verbose packet dump
+
+```bash
+sudo ./ft_malcolm -v -g 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
+```
+
+After the "Sending gratuitous ARP" line, stdout also contains one `[VERBOSE] Sending ARP packet` block: Ethernet src `de:ad:be:ef:00:01`, dst `ff:ff:ff:ff:ff:ff`, opcode `REPLY(2)`, sender and target IP both `192.168.65.14`, then a hex dump. The program still exits immediately.
+
+#### 7.2.3 Neighbor table on VM2
+
+Linux does not create a new neighbor from this broadcast while `arp_accept` is 0. An empty `ip neigh show 192.168.65.14` right after `-g` is expected when VM2 has never talked to that address.
+
+To see an update, the entry has to exist first. On **VM2**, before `-g`:
+
+```bash
+ping -c 1 -W 1 192.168.65.14
+ip neigh show 192.168.65.14
+```
+
+Expected real mapping (VM1's own NIC):
+
+```
+192.168.65.14 dev enp0s1 lladdr aa:77:fb:2e:e0:ed REACHABLE
+```
+
+Then run `-g` on **VM1** and, on **VM2**, read the table again without another `ping`:
+
+```bash
+ip neigh show 192.168.65.14
+```
+
+Expected after a kernel that accepts gratuitous updates:
+
+```
+192.168.65.14 dev enp0s1 lladdr de:ad:be:ef:00:01 REACHABLE
+```
+
+A second `ping` asks the network again. VM1's kernel answers with `aa:77:fb:2e:e0:ed` and the spoofed line disappears. Check `ip neigh` once, immediately after `-g`.
+
+If the MAC stays `aa:77:fb:2e:e0:ed` but `tcpdump` on VM2 showed the broadcast, the packet was delivered and the kernel dropped the update (`net.ipv4.conf.enp0s1.drop_gratuitous_arp`). The bonus requirement is the broadcast reply, which the capture already shows.
+
+#### 7.2.4 Long form
+
+Same output and same packet as `-g`:
 
 ```bash
 sudo ./ft_malcolm --gratuitous 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
