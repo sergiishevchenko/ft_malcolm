@@ -690,6 +690,7 @@ ft_malcolm/
     │   ├── MAC_IP.md          # MAC и IPv4
     │   ├── L2.md              # сеть канального уровня
     │   ├── NIC.md             # карта и кадр
+    │   ├── VM_NETWORK.md      # сети Mac и двух виртуалок
     │   └── HOW_IT_WORKS.md    # этот файл
     ├── ARCHITECTURE.md
     ├── EVALUATION.md
@@ -837,6 +838,7 @@ ip neigh show 192.168.65.14
 | [MAC_IP.md](MAC_IP.md) | MAC и IPv4: формат, маска, кадр |
 | [L2.md](L2.md) | сегмент, свитч, VLAN, граница L2 |
 | [NIC.md](NIC.md) | сетевая карта и Ethernet-кадр |
+| [VM_NETWORK.md](VM_NETWORK.md) | где стоят Mac и две виртуалки |
 | [../../README.md](../../README.md) | обзор, usage, примеры (EN) |
 | [../ARCHITECTURE.md](../ARCHITECTURE.md) | архитектурный walkthrough (EN) |
 | [../EVALUATION.md](../EVALUATION.md) | чеклист для защиты / peer review |
