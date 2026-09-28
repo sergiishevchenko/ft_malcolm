@@ -25,11 +25,11 @@
 
 ## 1. Зачем ARP
 
-Приложение говорит: «отправь пакет на `192.168.1.20`». IP-пакет готов. Но Ethernet не понимает IP: NIC передаёт кадр на **48-битный MAC**.
+Приложение говорит: «отправь пакет на `192.168.65.15`». IP-пакет готов. Но Ethernet не понимает IP: NIC передаёт кадр на **48-битный MAC**.
 
 Если MAC соседа ещё неизвестен, ядро не может собрать Ethernet-заголовок. Оно спрашивает локальный сегмент:
 
-> Кто имеет IP `192.168.1.20`? Скажите свой MAC.
+> Кто имеет IP `192.168.65.15`? Скажите свой MAC.
 
 Это и есть **ARP** (Address Resolution Protocol, [RFC 826](https://datatracker.ietf.org/doc/html/rfc826)): резолюция **L3-адреса в L2-адрес** в пределах одного канального сегмента.
 
@@ -58,11 +58,11 @@ ARP не ездит внутри IP-пакета. Это отдельный Ethe
     │
    TCP / UDP / ICMP
     │
-   IPv4                         ← адрес: 192.168.1.20
+   IPv4                         ← адрес: 192.168.65.15
     │
    ARP  ←─────────────          ← «какой MAC у этого IP?»
     │
- Ethernet II                    ← адрес: aa:bb:cc:dd:ee:ff
+ Ethernet II                    ← адрес: aa:77:fb:2e:e0:aa
     │
   кабель / Wi-Fi / мост
 ```
@@ -94,12 +94,12 @@ ARP нужен не «на каждый пакет», а когда нет (ил
 ### Сосед в той же подсети
 
 ```
-ping 192.168.1.20
+ping 192.168.65.15
 ```
 
-1. Маршрутизация: `192.168.1.20` — on-link (та же сеть /24).
-2. Next-hop L2 = сам `192.168.1.20`.
-3. Нет записи в neighbor table → **ARP Request** на `192.168.1.20`.
+1. Маршрутизация: `192.168.65.15` — on-link (та же сеть /24).
+2. Next-hop L2 = сам `192.168.65.15`.
+3. Нет записи в neighbor table → **ARP Request** на `192.168.65.15`.
 4. Reply пришёл → IP-пакет уходит с Ethernet dest = MAC соседа.
 
 ### Хост в другой сети
@@ -108,7 +108,7 @@ ping 192.168.1.20
 ping 8.8.8.8
 ```
 
-1. Маршрутизация: не on-link → next-hop = default gateway, например `192.168.1.1`.
+1. Маршрутизация: не on-link → next-hop = default gateway, например `192.168.65.1`.
 2. ARP спрашивает **MAC шлюза**, не `8.8.8.8`.
 3. Кадр на проводе: Ethernet dest = MAC роутера, внутри IP dest = `8.8.8.8`.
 
@@ -134,8 +134,8 @@ ping 8.8.8.8
 Пример:
 
 ```
-192.168.1.1   ether  00:11:22:33:44:55  C  eth0
-192.168.1.20  ether  aa:bb:cc:dd:ee:ff  C  eth0
+192.168.65.14  ether  aa:77:fb:2e:e0:ed  C  enp0s1
+192.168.65.15  ether  aa:77:fb:2e:e0:aa  C  enp0s1
 ```
 
 ### Состояния (Linux NUD — Neighbor Unreachability Detection)
@@ -174,7 +174,7 @@ INCOMPLETE ──Reply──► REACHABLE ──таймер──► STALE
 ip neigh show
 arp -a
 sudo ip -s -s neigh flush all
-sudo ip neigh del 192.168.1.20 dev eth0
+sudo ip neigh del 192.168.65.14 dev enp0s1
 ```
 
 `C` в выводе `arp -a` — complete (запись заполнена). Статические записи (`PERM` / `NUD_PERMANENT`) ядро само не перезапишет обычным Reply — spoofing их не сдвинет без root на жертве.
@@ -240,7 +240,7 @@ sudo ip neigh del 192.168.1.20 dev eth0
 
 ## 6. Обмен Request / Reply
 
-Два хоста в одной подсети. A (`192.168.1.10`, MAC `AA`) хочет послать IP-пакет B (`192.168.1.20`, MAC `BB`). В кэше A записи нет.
+Два хоста в одной подсети. A (`192.168.65.14`, MAC `aa:77:fb:2e:e0:ed`) хочет послать IP-пакет B (`192.168.65.15`, MAC `aa:77:fb:2e:e0:aa`). В кэше A записи нет.
 
 ### Request (broadcast)
 
@@ -248,35 +248,35 @@ A шлёт всем на сегменте:
 
 ```
 Ethernet dest = ff:ff:ff:ff:ff:ff
-Ethernet src  = AA
+Ethernet src  = aa:77:fb:2e:e0:ed
 EtherType     = 0x0806
 
 opcode     = 1 (REQUEST)
-sender_mac = AA
-sender_ip  = 192.168.1.10
+sender_mac = aa:77:fb:2e:e0:ed
+sender_ip  = 192.168.65.14
 target_mac = 00:00:00:00:00:00
-target_ip  = 192.168.1.20          ← «кто это?»
+target_ip  = 192.168.65.15          ← «кто это?»
 ```
 
-Кадр видят все. Отвечать должен только владелец `192.168.1.20`. Остальные часто учат из Request побочный факт: `192.168.1.10 → AA` (*passive learning*).
+Кадр видят все. Отвечать должен только владелец `192.168.65.15`. Остальные часто учат из Request побочный факт: `192.168.65.14 → aa:77:fb:2e:e0:ed` (*passive learning*).
 
 ### Reply (unicast)
 
 B отвечает только A:
 
 ```
-Ethernet dest = AA
-Ethernet src  = BB
+Ethernet dest = aa:77:fb:2e:e0:ed
+Ethernet src  = aa:77:fb:2e:e0:aa
 EtherType     = 0x0806
 
 opcode     = 2 (REPLY)
-sender_mac = BB                    ← «мой MAC»
-sender_ip  = 192.168.1.20
-target_mac = AA
-target_ip  = 192.168.1.10
+sender_mac = aa:77:fb:2e:e0:aa      ← «мой MAC»
+sender_ip  = 192.168.65.15
+target_mac = aa:77:fb:2e:e0:ed
+target_ip  = 192.168.65.14
 ```
 
-A пишет в кэш `192.168.1.20 → BB` и отправляет отложенный IP-пакет уже с Ethernet dest = `BB`.
+A пишет в кэш `192.168.65.15 → aa:77:fb:2e:e0:aa` и отправляет отложенный IP-пакет уже с Ethernet dest = `aa:77:fb:2e:e0:aa`.
 
 Дальше, пока запись `REACHABLE`, ARP не нужен: идут обычные IPv4-кадры с EtherType `0x0800`.
 
@@ -294,31 +294,31 @@ A пишет в кэш `192.168.1.20 → BB` и отправляет отлож�
 
 ## 7. Пример на байтах
 
-Хост `10.0.2.20` / `08:00:27:dd:ee:ff` спрашивает MAC для `10.0.2.10`.
+Хост `192.168.65.15` / `aa:77:fb:2e:e0:aa` спрашивает MAC для `192.168.65.14`.
 
 ### Request (42 байта полезной нагрузки)
 
 ```
 ff ff ff ff ff ff   Ethernet dest = broadcast
-08 00 27 dd ee ff   Ethernet src  = MAC жертвы
+aa 77 fb 2e e0 aa   Ethernet src  = MAC жертвы
 08 06               EtherType ARP
 00 01               hw_type = Ethernet
 08 00               proto_type = IPv4
 06                  hw_len
 04                  proto_len
 00 01               opcode = REQUEST
-08 00 27 dd ee ff   sender_mac
-0a 00 02 14         sender_ip  = 10.0.2.20
+aa 77 fb 2e e0 aa   sender_mac
+c0 a8 41 0f         sender_ip  = 192.168.65.15
 00 00 00 00 00 00   target_mac = unknown
-0a 00 02 0a         target_ip  = 10.0.2.10
+c0 a8 41 0e         target_ip  = 192.168.65.14
 ```
 
 ### Поддельный Reply от ft_malcolm
 
-`source_ip=10.0.2.10`, `source_mac=de:ad:be:ef:00:01`:
+`source_ip=192.168.65.14`, `source_mac=de:ad:be:ef:00:01`:
 
 ```
-08 00 27 dd ee ff   Ethernet dest = MAC жертвы (unicast)
+aa 77 fb 2e e0 aa   Ethernet dest = MAC жертвы (unicast)
 de ad be ef 00 01   Ethernet src  = поддельный MAC
 08 06               EtherType ARP
 00 01               hw_type = Ethernet
@@ -326,12 +326,12 @@ de ad be ef 00 01   Ethernet src  = поддельный MAC
 06 04
 00 02               opcode = REPLY
 de ad be ef 00 01   sender_mac = ложь
-0a 00 02 0a         sender_ip  = 10.0.2.10
-08 00 27 dd ee ff   target_mac = жертва
-0a 00 02 14         target_ip  = 10.0.2.20
+c0 a8 41 0e         sender_ip  = 192.168.65.14
+aa 77 fb 2e e0 aa   target_mac = жертва
+c0 a8 41 0f         target_ip  = 192.168.65.15
 ```
 
-После этого на жертве: `10.0.2.10 → de:ad:be:ef:00:01`.
+После этого на жертве: `192.168.65.14 → de:ad:be:ef:00:01`. Настоящий MAC владельца этого IP — `aa:77:fb:2e:e0:ed`.
 
 ---
 
@@ -413,7 +413,7 @@ Wi-Fi / shared medium: broadcast и так слышат все ассоциир�
 
 RFC 826 писался в 1982 для доверенной сети. Защиты нет:
 
-1. **Нет аутентификации.** Reply не доказывает право на IP. Любой в сегменте может сказать «`192.168.1.1` — это я».
+1. **Нет аутентификации.** Reply не доказывает право на IP. Любой в сегменте может сказать «`192.168.65.14` — это я».
 2. **Незапрошенный Reply часто принимается.** Многие стеки обновляют кэш без предшествующего Request (gratuitous / spoofed).
 3. **Request — broadcast.** Атакующий видит, кто кого ищет, и может ответить раньше настоящего владельца.
 4. **Кэш — источник истины для L2.** Подменили MAC — все кадры к этому IP едут мимо владельца: MITM, blackhole или увод на третий хост. IP-фаервол тут ни при чём: решение уже принято на Ethernet.
@@ -460,19 +460,19 @@ Gratuitous (`-g`): шаг 1 пропускается, сразу broadcast Reply
 ip neigh show                       # кэш ядра
 arp -a                              # старый синтаксис
 ip -s neigh show                    # + статистика
-sudo ip neigh flush dev eth0        # сбросить кэш на iface
-sudo ip neigh del 10.0.2.10 dev eth0
+sudo ip neigh flush dev enp0s1     # сбросить кэш на iface
+sudo ip neigh del 192.168.65.14 dev enp0s1
 
-arping -c 1 -I eth0 10.0.2.10       # спровоцировать Request
-sudo tcpdump -i eth0 -n -e arp      # кадры на проводе (+ Ethernet)
-sudo tcpdump -i eth0 -n -XX arp     # + hex dump
+arping -c 1 -I enp0s1 192.168.65.14  # спровоцировать Request
+sudo tcpdump -i enp0s1 -n -e arp     # кадры на проводе (+ Ethernet)
+sudo tcpdump -i enp0s1 -n -XX arp    # + hex dump
 ```
 
 В tcpdump:
 
 ```
-Who has 10.0.2.10? Tell 10.0.2.20
-10.0.2.10 is-at de:ad:be:ef:00:01
+Who has 192.168.65.14? Tell 192.168.65.15
+192.168.65.14 is-at de:ad:be:ef:00:01
 ```
 
 Первая строка — Request, вторая — Reply (легитимный или поддельный — по MAC).

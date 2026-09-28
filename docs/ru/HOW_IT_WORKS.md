@@ -57,20 +57,20 @@
 Запуск:
 
 ```
-sudo ./ft_malcolm 10.0.2.10 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
 Смысл четырёх аргументов:
 
-- `10.0.2.10` / `de:ad:be:ef:00:01` — **ложная** пара, которую запишем жертве;
-- `10.0.2.20` / `08:00:27:dd:ee:ff` — **жертва**: чей Request ловим и кому слать unicast Reply.
+- `192.168.65.14` / `de:ad:be:ef:00:01` — **ложная** пара, которую запишем жертве. IP при этом настоящий адрес атакующего (`enp0s1`, MAC карты `aa:77:fb:2e:e0:ed`);
+- `192.168.65.15` / `aa:77:fb:2e:e0:aa` — **жертва**: чей Request ловим и кому слать unicast Reply.
 
 Дальше один проход `main()`:
 
 1. **Root.** `getuid() != 0` → сразу выход. Иначе `socket(AF_PACKET, …)` всё равно упадёт с permission denied.
 2. **Аргументы** (`parsing.c`). Флаги `-v -c -g -i`, затем ровно четыре позиционных. IP принимается как `a.b.c.d`, как одно десятичное число или как hostname (`getaddrinfo`). MAC строго `XX:XX:XX:XX:XX:XX`. Всё кладётся в одну структуру `t_malcolm`.
 3. **Сигналы.** `SIGINT`/`SIGTERM` только ставят `g_running = 0`. Блокирующий `recvfrom` прерывается с `EINTR`, цикл выходит без зависания.
-4. **Интерфейс** (`network.c`). Без `-i` берётся первый UP non-loopback с IPv4. С него читаются MAC и `ifindex` (нужен для `sendto`). Печатается `Found available interface: eth0`.
+4. **Интерфейс** (`network.c`). Без `-i` берётся первый UP non-loopback с IPv4. С него читаются MAC и `ifindex` (нужен для `sendto`). Печатается `Found available interface: enp0s1`.
 5. **Сокет.** `socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP))` + `SO_BINDTODEVICE`. В сокет попадают только ARP-кадры и только с выбранного iface. Ядро отдаёт кадр целиком, с Ethernet-заголовком — поэтому буфер можно сразу кастить к `t_arp_packet *`.
 6. **Две ветки:**
    - **`-g`:** собрать broadcast Reply (`sender_ip == target_ip == source_ip`), один `sendto`, выход. Request никто не ждёт.
@@ -78,7 +78,7 @@ sudo ./ft_malcolm 10.0.2.10 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
 7. **Поддельный Reply.** Ethernet dest = MAC жертвы, Ethernet src и ARP sender_mac = `source_mac`, ARP sender_ip = `source_ip`. Это и есть ложь: «я — владелец `source_ip`». Кадр уходит unicast на жертву через `sockaddr_ll` с `sll_ifindex`.
 8. **Выход.** Без `-c` — после первого Reply. С `-c` — снова слушать, пока Ctrl+C: ядро жертвы периодически обновляет ARP, и разовый ответ со временем затрётся настоящим.
 
-На стороне жертвы после шага 7 ядро пишет в кэш `10.0.2.10 → de:ad:be:ef:00:01`. Следующий кадр на `10.0.2.10` уже идёт на `de:ad:be:ef:00:01`, а не на реальный MAC владельца.
+На стороне жертвы после шага 7 ядро пишет в кэш `192.168.65.14 → de:ad:be:ef:00:01`. Следующий кадр на `192.168.65.14` уже идёт на `de:ad:be:ef:00:01`, а не на реальный MAC владельца `aa:77:fb:2e:e0:ed`.
 
 Связь кусков кода:
 
@@ -106,7 +106,7 @@ argv  →  t_malcolm (IP/MAC/флаги)
 
 ### ARP Request (запрос)
 
-Хост A хочет узнать MAC хоста B (`192.168.1.20`):
+Хост A хочет узнать MAC хоста B (`192.168.65.15`):
 
 ```
 Ethernet:
@@ -270,7 +270,7 @@ t_malcolm
 ├── source_mac[6]     поддельный MAC
 ├── target_ip[4]      IP жертвы
 ├── target_mac[6]     MAC жертвы
-├── iface_name[]      имя интерфейса (например "eth0")
+├── iface_name[]      имя интерфейса (например "enp0s1")
 ├── iface_mac[6]      MAC своего интерфейса (считывается в runtime)
 ├── iface_index       индекс интерфейса (для sockaddr_ll)
 ├── sockfd            дескриптор raw-сокета (-1 до открытия)
@@ -357,8 +357,8 @@ if (getuid() != 0) { /* ошибка и выход */ }
 
 **IP** (`validate_ip`) — три стратегии по порядку:
 
-1. `inet_pton(AF_INET)` — обычный dotted-decimal (`10.0.2.1`)
-2. строка из одних цифр — 32-битное десятичное число (`167772161` → `10.0.0.1`)
+1. `inet_pton(AF_INET)` — обычный dotted-decimal (`192.168.65.14`)
+2. строка из одних цифр — 32-битное десятичное число (`3232252174` → `192.168.65.14`)
 3. `getaddrinfo(..., AF_INET)` — hostname (`localhost`, DNS)
 
 Результат — 4 байта в network order.
@@ -506,19 +506,19 @@ sendto(sockfd, pkt, sizeof(pkt), 0, &sll, ...);
 
 ## 8. Легитимный vs поддельный пакет
 
-Один и тот же Request жертвы. Сравним честный Reply владельца `10.0.2.10` (MAC `08:00:27:aa:bb:cc`) и Reply ft_malcolm с `source_mac=de:ad:be:ef:00:01`.
+Один и тот же Request жертвы. Сравним честный Reply владельца `192.168.65.14` (MAC карты `aa:77:fb:2e:e0:ed`) и Reply ft_malcolm с `source_mac=de:ad:be:ef:00:01`.
 
 | Поле | Легитимный Reply | Поддельный Reply |
 |------|------------------|------------------|
-| eth.dest | MAC жертвы | MAC жертвы |
-| eth.src | `08:00:27:aa:bb:cc` | `de:ad:be:ef:00:01` |
+| eth.dest | `aa:77:fb:2e:e0:aa` | `aa:77:fb:2e:e0:aa` |
+| eth.src | `aa:77:fb:2e:e0:ed` | `de:ad:be:ef:00:01` |
 | opcode | REPLY | REPLY |
-| sender_ip | `10.0.2.10` | `10.0.2.10` |
-| sender_mac | `08:00:27:aa:bb:cc` | `de:ad:be:ef:00:01` |
-| target_ip | IP жертвы | IP жертвы |
-| target_mac | MAC жертвы | MAC жертвы |
+| sender_ip | `192.168.65.14` | `192.168.65.14` |
+| sender_mac | `aa:77:fb:2e:e0:ed` | `de:ad:be:ef:00:01` |
+| target_ip | `192.168.65.15` | `192.168.65.15` |
+| target_mac | `aa:77:fb:2e:e0:aa` | `aa:77:fb:2e:e0:aa` |
 
-Отличается только MAC в sender (и обычно Ethernet src). Для жертвы оба кадра — «валидный» ARP Reply про `10.0.2.10`. Протокол не даёт критерия, кому верить.
+Отличается только MAC в sender (и обычно Ethernet src). Для жертвы оба кадра — «валидный» ARP Reply про `192.168.65.14`. Протокол не даёт критерия, кому верить.
 
 Если оба ответа пришли почти одновременно — побеждает тот, чей кадр ядро обработало последним. `-c` увеличивает шанс удерживать ложную запись.
 
@@ -607,16 +607,16 @@ ft_malcolm/
 Ждать один подходящий Request → один Reply → выход.
 
 ```bash
-sudo ./ft_malcolm 10.0.2.10 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
 Ожидаемый вывод после Request с жертвы:
 
 ```
-Found available interface: eth0
+Found available interface: enp0s1
 An ARP request has been broadcast.
-    mac address of request: 08:00:27:dd:ee:ff
-    IP address of request: 10.0.2.20
+mac address of request: aa:77:fb:2e:e0:aa
+IP address of request: 192.168.65.15
 Now sending an ARP reply to the target address with spoofed source, please wait...
 Sent an ARP reply packet, you may now check the arp table on the target.
 Exiting program...
@@ -647,9 +647,9 @@ Exiting program...
 
 ### Выбор интерфейса (`-i`)
 
-Без `-i` — автодетект первого UP non-loopback IPv4. С `-i eth0` — только этот iface (ошибка, если MAC/index не найдены).
+Без `-i` — автодетект первого UP non-loopback IPv4. С `-i enp0s1` — только этот iface (ошибка, если MAC/index не найдены).
 
-Флаги комбинируются: `-v -c -i eth0 ...`.
+Флаги комбинируются: `-v -c -i enp0s1 ...`.
 
 `-g` и цикл listen взаимоисключающи в `main`: при `-g` continuous/listen не запускаются.
 
@@ -669,10 +669,10 @@ Exiting program...
 
 | Симптом | Частая причина | Что проверить |
 |---------|----------------|---------------|
-| Висит на «Waiting» / молчит после Found interface | жертва не шлёт Request | на жертве: `arping -c 1 -I eth0 <source_ip>`; тот же L2-сегмент? |
+| Молчит после `Found available interface: enp0s1` | жертва не шлёт Request | на жертве: `arping -c 1 -I enp0s1 192.168.65.14`; тот же L2-сегмент? |
 | Request в tcpdump есть, программа не реагирует | фильтр не совпал | `-v`: sender_ip == target_ip? target_ip ARP == source_ip? broadcast dest? |
 | Reply ушёл, в `arp -a` правильный MAC | настоящий хост ответил позже | `-c`; или выключить/изолировать настоящего владельца в лабе |
-| Reply ушёл, записи нет | жертва отбросила / другой iface | тот же iface у жертвы? не VRF? static neigh? |
+| Reply ушёл, `ip neigh` пустой | запрос слал `arping`, ядро запись не создало | на жертве `ping -c 1 -W 1 192.168.65.14` при запущенном `-c` |
 | `no suitable network interface` | только lo / iface down | `ip link`; `-i` |
 | `could not get interface info` | `-i` на несуществующее имя | `ip link show` |
 | `must be run as root` | забыли sudo | `sudo ./ft_malcolm ...` |
@@ -681,7 +681,7 @@ Exiting program...
 Диагностика на проводе (атакующий):
 
 ```bash
-sudo tcpdump -i eth0 -n -e arp
+sudo tcpdump -i enp0s1 -n -e arp
 ```
 
 Должны увидеть Request жертвы и сразу свой Reply с поддельным `is-at`.
@@ -709,14 +709,13 @@ make test     # unit-тесты (без raw-сокетов)
 Минимальный ручной сценарий:
 
 ```bash
-# VM1 (атакующий)
-sudo ./ft_malcolm -v 10.0.2.10 de:ad:be:ef:00:01 10.0.2.20 08:00:27:dd:ee:ff
+# VM1 (атакующий) — -c, потому что ядро VM1 тоже отвечает за 192.168.65.14
+sudo ./ft_malcolm -c -v 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
 
-# VM2 (жертва)
-sudo ip neigh del 10.0.2.10 dev eth0 2>/dev/null
-arping -c 1 -I eth0 10.0.2.10
-ip neigh show
-# ожидается: 10.0.2.10 ... de:ad:be:ef:00:01
+# VM2 (жертва), пока процесс на VM1 ещё слушает
+ping -c 1 -W 1 192.168.65.14
+ip neigh show 192.168.65.14
+# ожидается: 192.168.65.14 dev enp0s1 lladdr de:ad:be:ef:00:01 REACHABLE
 ```
 
 Больше кейсов: [../TESTING.md](../TESTING.md), [../EVALUATION.md](../EVALUATION.md).
