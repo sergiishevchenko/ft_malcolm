@@ -77,6 +77,7 @@ ft_malcolm/
     │   ├── MAC_IP.md        # MAC and IPv4 addresses
     │   ├── MASK.md          # Subnet mask
     │   ├── L2_L3.md         # L2, L3, and the segment
+    │   ├── FRAME.md         # How a frame travels
 │   ├── NIC.md           # NIC and Ethernet frame
 │   ├── VM_NETWORK.md    # Mac and VM networks
 │   └── HOW_IT_WORKS.md  # How the program works

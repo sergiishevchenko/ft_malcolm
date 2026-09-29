@@ -299,6 +299,7 @@ sudo tcpdump -i enp0s1 -n -e -XX arp # кадр: MAC, EtherType, hex
 Связанные доки:
 
 - [MAC_IP.md](MAC_IP.md) — адреса в заголовке кадра и в IP внутри него
+- [FRAME.md](FRAME.md) — путь кадра от ping до карты соседа
 - [L2_L3.md](L2_L3.md) — сегмент, по которому кадр идёт до следующей карты
 - [ARP.md](ARP.md) — содержимое ARP-кадра
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — сокет на одной карте и сборка 42 байт
