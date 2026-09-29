@@ -73,6 +73,8 @@ ARP не ездит внутри IP-пакета. Это отдельный Ethe
 | L2 Data Link | Ethernet II | 48 бит MAC |
 | между L2 и L3 | ARP | переводит IP → MAC |
 
+Что значит строка «между L2 и L3»: [L2_L3.md](L2_L3.md), раздел 8.
+
 EtherType в Ethernet-заголовке:
 
 | Значение | Протокол |
@@ -493,6 +495,6 @@ Who has 192.168.65.14? Tell 192.168.65.15
 
 - [MAC_IP.md](MAC_IP.md) — MAC и IPv4: формат, маска, где лежат в кадре
 - [NIC.md](NIC.md) — карта и Ethernet-кадр
-- [L2.md](L2.md) — сегмент, свитч, broadcast domain
+- [L2_L3.md](L2_L3.md) — L2 и L3, ARP между ними, сегмент и свитч
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — как ft_malcolm собирает и шлёт эти кадры
 - [../ARCHITECTURE.md](../ARCHITECTURE.md) — архитектурный walkthrough (EN)

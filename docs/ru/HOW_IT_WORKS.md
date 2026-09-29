@@ -688,7 +688,7 @@ ft_malcolm/
     ├── ru/
     │   ├── ARP.md             # протокол ARP
     │   ├── MAC_IP.md          # MAC и IPv4
-    │   ├── L2.md              # сеть канального уровня
+    │   ├── L2_L3.md           # L2, L3 и место ARP
     │   ├── NIC.md             # карта и кадр
     │   ├── VM_NETWORK.md      # сети Mac и двух виртуалок
     │   └── HOW_IT_WORKS.md    # этот файл
@@ -837,7 +837,7 @@ ip neigh show 192.168.65.14
 | [ARP.md](ARP.md) | протокол ARP: кэш, кадр, Request/Reply, уязвимость |
 | [MAC_IP.md](MAC_IP.md) | MAC и IPv4: формат, маска, кадр |
 | [MASK.md](MASK.md) | маска `/24`: сеть, хост, сосед и шлюз |
-| [L2.md](L2.md) | сегмент, свитч, VLAN, граница L2 |
+| [L2_L3.md](L2_L3.md) | L2 и L3, ARP между ними, сегмент и свитч |
 | [NIC.md](NIC.md) | сетевая карта и Ethernet-кадр |
 | [VM_NETWORK.md](VM_NETWORK.md) | где стоят Mac и две виртуалки |
 | [../../README.md](../../README.md) | обзор, usage, примеры (EN) |
