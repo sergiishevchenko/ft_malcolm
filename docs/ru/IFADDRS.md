@@ -137,6 +137,8 @@ sll = (struct sockaddr_ll *)ifa->ifa_addr;
 | `sll_addr` | массив из 8 байт. Первые 6 — MAC интерфейса |
 | `sll_ifindex` | номер интерфейса в ядре. Его потом кладут в `sendto` |
 
+Все поля `struct sockaddr_ll` и вторая роль той же структуры в `sendto`: [SOCKADDR_LL.md](SOCKADDR_LL.md).
+
 На macOS канальный адрес приходит как `AF_LINK` (`struct sockaddr_dl`), не как `AF_PACKET`. Код `get_iface_mac` рассчитан на Linux.
 
 Имя интерфейса и индекс — разные вещи. Имя можно сменить (`ip link set eth0 name lan0`), индекс выдаёт ядро. `SO_BINDTODEVICE` принимает имя, `sendto` на пакетном сокете принимает индекс.
@@ -270,3 +272,4 @@ ip addr show          # те же интерфейсы плюс IPv4 и IPv6
 - [NIC.md](NIC.md) — карта, имя, индекс, MAC на интерфейсе
 - [MAC_IP.md](MAC_IP.md) — что такое MAC и IPv4, которые лежат в узлах
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — шаг `find_interface` в общем ходе программы
+- [SOCKADDR_LL.md](SOCKADDR_LL.md) — `struct sockaddr_ll`: MAC, индекс и адрес для `sendto`

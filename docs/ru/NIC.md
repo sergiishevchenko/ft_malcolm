@@ -304,3 +304,4 @@ sudo tcpdump -i enp0s1 -n -e -XX arp # кадр: MAC, EtherType, hex
 - [ARP.md](ARP.md) — содержимое ARP-кадра
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — сокет на одной карте и сборка 42 байт
 - [IFADDRS.md](IFADDRS.md) — `struct ifaddrs` и `getifaddrs`
+- [SOCKADDR_LL.md](SOCKADDR_LL.md) — `struct sockaddr_ll`: индекс карты и MAC для `sendto`
