@@ -843,6 +843,7 @@ ip neigh show 192.168.65.14
 | [NIC.md](NIC.md) | сетевая карта и Ethernet-кадр |
 | [IFADDRS.md](IFADDRS.md) | `struct ifaddrs`, `getifaddrs`, разбор списка в `find_interface` |
 | [SOCKADDR_LL.md](SOCKADDR_LL.md) | `struct sockaddr_ll`: MAC и индекс карты, адрес `sendto` |
+| [SIGACTION.md](SIGACTION.md) | `struct sigaction`: `SIGINT`/`SIGTERM`, `g_running`, `EINTR` |
 | [VM_NETWORK.md](VM_NETWORK.md) | где стоят Mac и две виртуалки |
 | [../../README.md](../../README.md) | обзор, usage, примеры (EN) |
 | [../ARCHITECTURE.md](../ARCHITECTURE.md) | архитектурный walkthrough (EN) |
