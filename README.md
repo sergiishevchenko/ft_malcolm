@@ -45,7 +45,7 @@ This is one of the fundamental techniques behind Man-in-the-Middle (MITM) attack
 | Interface selection (`-i`) | Bonus | Done |
 | Unit tests (`make test`) | Extra | Done |
 
-Step-by-step checks for the lab (`192.168.65.14` / `192.168.65.15`, interface `enp0s1`) are in [docs/EVALUATION.md](docs/EVALUATION.md).
+Step-by-step checks for the lab (`192.168.65.14` / `192.168.65.15`, interface `enp0s1`) are in [docs/EVALUATION.md](docs/EVALUATION.md). The command list for the same lab is in [docs/COMMANDS.md](docs/COMMANDS.md).
 
 ## Project Structure
 
@@ -82,6 +82,7 @@ ft_malcolm/
 │   ├── VM_NETWORK.md    # Mac and VM networks
 │   └── HOW_IT_WORKS.md  # How the program works
     ├── ARCHITECTURE.md
+    ├── COMMANDS.md
     ├── EVALUATION.md
     └── TESTING.md
 ```
