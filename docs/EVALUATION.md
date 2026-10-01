@@ -38,6 +38,7 @@ Lab values used throughout this guide:
 | VM2 (target) MAC | `aa:77:fb:2e:e0:aa` |
 | Spoofed source IP | `192.168.65.14` (attacker's own address) |
 | Spoofed source MAC | `de:ad:be:ef:00:01` |
+| Unused address | `192.168.65.200` (same subnet, no host owns it) |
 
 `source_ip` is the attacker's real address, so VM1's kernel also answers ARP for `192.168.65.14` with `aa:77:fb:2e:e0:ed`. A single spoofed reply can lose that race. Use `-c` when checking the neighbor table.
 
@@ -293,6 +294,48 @@ sudo ./ft_malcolm 192.168.65.14 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:a
 kill $!
 # Expected: same clean exit with "Exiting program..." message
 ```
+
+### 3.8 Spoof an address nobody owns
+
+`source_ip` does not have to be the attacker's address. `192.168.65.200` is in `192.168.65.0/24` and no host uses it, so VM1's kernel does not answer for it either. There is no race with the real MAC.
+
+On **VM2**, before the attack, the neighbor table has no entry:
+
+```bash
+ip neigh show 192.168.65.200
+# Expected: no output
+```
+
+On **VM1**:
+
+```bash
+sudo ./ft_malcolm -c 192.168.65.200 de:ad:be:ef:00:01 192.168.65.15 aa:77:fb:2e:e0:aa
+```
+
+On **VM2**, while that process is still up, make the kernel ask itself (`arping` alone does not install a neighbor; see 3.3):
+
+```bash
+ping -c 1 -W 1 192.168.65.200
+ip neigh show 192.168.65.200
+```
+
+Expected on VM1: the same reply sequence as in 3.4, with request IP `192.168.65.15`. The program stays up because of `-c`.
+
+Expected on VM2:
+
+```
+192.168.65.200 dev enp0s1 lladdr de:ad:be:ef:00:01 REACHABLE
+```
+
+`ping` itself times out. Nothing answers ICMP at `de:ad:be:ef:00:01`. The neighbor line is the check: the kernel accepted the forged reply for an address that does not exist on the LAN.
+
+`arping` still wakes the program if you only need to see the log on VM1:
+
+```bash
+arping -c 1 -I enp0s1 192.168.65.200
+```
+
+Stop VM1 with Ctrl+C when done.
 
 ---
 
