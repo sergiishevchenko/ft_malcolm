@@ -482,7 +482,7 @@ if (getuid() != 0) { /* ошибка и выход */ }
 
 **Файл:** `network.c` → `find_interface()`
 
-`getifaddrs()` перечисляет интерфейсы.
+`getifaddrs()` перечисляет интерфейсы. Что лежит в узле списка: [IFADDRS.md](IFADDRS.md).
 
 **Автовыбор** (если нет `-i`):
 
@@ -841,6 +841,7 @@ ip neigh show 192.168.65.14
 | [L2_L3.md](L2_L3.md) | L2 и L3, ARP между ними, сегмент и свитч |
 | [FRAME.md](FRAME.md) | шаг за шагом: карта, свитч, хаб, мост, роутер |
 | [NIC.md](NIC.md) | сетевая карта и Ethernet-кадр |
+| [IFADDRS.md](IFADDRS.md) | `struct ifaddrs`, `getifaddrs`, разбор списка в `find_interface` |
 | [VM_NETWORK.md](VM_NETWORK.md) | где стоят Mac и две виртуалки |
 | [../../README.md](../../README.md) | обзор, usage, примеры (EN) |
 | [../ARCHITECTURE.md](../ARCHITECTURE.md) | архитектурный walkthrough (EN) |
