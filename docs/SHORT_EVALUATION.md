@@ -265,11 +265,13 @@ ft_malcolm: invalid mac address: (aaa:bb:cc:dd:ee:ff)
 
 ## Decimal IPv4
 
-`3232252174` is `192.168.65.14`. The program starts and waits. Ctrl+C stops it.
+`3232252174` is `192.168.65.14`. The program starts and waits. That wait is the check: the decimal number was accepted as the source IP. Ctrl+C stops it.
 
 ```bash
 sudo ./ft_malcolm 3232252174 aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
+
+A `ping` from the host prints nothing further while `ip neigh show 192.168.65.14` already has a line. The kernel sends ICMP to the stored MAC and does not broadcast who-has, so there is no request to log. Delete that entry first if you want the reply log from step 4.
 
 ## Hostname
 
