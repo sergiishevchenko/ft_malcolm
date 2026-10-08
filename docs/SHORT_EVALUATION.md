@@ -281,6 +281,8 @@ A name is resolved to an IPv4 address with `getaddrinfo`, then used like a numer
 sudo ./ft_malcolm localhost aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
+A `ping` to `192.168.65.14` prints nothing. The program is waiting for who-has `127.0.0.1`, and that ping asks for `192.168.65.14`. A `ping` to `127.0.0.1` stays on the loopback interface and never becomes an ARP request on `enp0s1`. The wait after start is the whole check.
+
 An unknown name fails immediately, with the same message as a bad IP:
 
 ```bash
