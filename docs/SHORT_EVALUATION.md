@@ -61,6 +61,7 @@ sudo ip neigh flush all
 | `all` | Every entry, on every interface |
 
 Deleted entries are printed one per line. An empty table prints nothing. `arp -a` and `ip neigh` then show no `192.168.65.14` line until the host asks for that address again.
+
 ---
 
 ## Repository
