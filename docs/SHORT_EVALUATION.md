@@ -275,7 +275,13 @@ A `ping` from the host prints nothing further while `ip neigh show 192.168.65.14
 
 ## Hostname
 
-An unknown name fails immediately.
+A name is resolved to an IPv4 address with `getaddrinfo`, then used like a numeric IP. `localhost` resolves to `127.0.0.1`. The program starts and waits. Ctrl+C stops it.
+
+```bash
+sudo ./ft_malcolm localhost aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
+```
+
+An unknown name fails immediately, with the same message as a bad IP:
 
 ```bash
 sudo ./ft_malcolm 192.168.65.14 aa:bb:cc:dd:ee:ff nonexistent.invalid.host aa:77:fb:2e:e0:aa
