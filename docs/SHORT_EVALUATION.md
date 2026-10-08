@@ -17,18 +17,50 @@ ip -4 -br addr
 
 `ip -br link` prints the interface and its MAC. `ip -4 -br addr` prints the IPv4 address. The full `ip addr` also lists IPv6 addresses; those are not the MAC.
 
-Second terminal on VM1:
+Second terminal on VM1. Leave it running.
 
 ```bash
 sudo tcpdump -vv -i enp0s1 arp
 ```
 
-On the host:
+| Part | Meaning |
+|---|---|
+| `sudo` | Capture on a real interface needs root |
+| `-vv` | Verbose ARP decode: hardware type, protocol type, and their lengths |
+| `-i enp0s1` | Listen on this interface |
+| `arp` | Filter. Only ARP packets are printed |
+
+Right after start, before any ARP on the wire:
+
+```text
+tcpdump: listening on enp0s1, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+```
+
+The process then waits. Silence here means no ARP yet.
+
+After `arping` or `ping` from the host, two lines appear. The reply MAC is the spoofed one:
+
+```text
+ARP, Ethernet (len 6), IPv4 (len 4), Request who-has 192.168.65.14 tell 192.168.65.15, length 28
+ARP, Ethernet (len 6), IPv4 (len 4), Reply 192.168.65.14 is-at aa:bb:cc:dd:ee:ff, length 28
+```
+
+The VM kernel may also answer for its own IP. That extra reply carries the real MAC of `enp0s1` on VM1, from `ip -br link`.
+
+On the host, clear the neighbor table (the ARP cache):
 
 ```bash
 sudo ip neigh flush all
 ```
 
+| Part | Meaning |
+|---|---|
+| `sudo` | Changing the neighbor table needs root |
+| `neigh` | The neighbor table: IPv4 entries are ARP |
+| `flush` | Delete matching entries |
+| `all` | Every entry, on every interface |
+
+Deleted entries are printed one per line. An empty table prints nothing. `arp -a` and `ip neigh` then show no `192.168.65.14` line until the host asks for that address again.
 ---
 
 ## Repository
