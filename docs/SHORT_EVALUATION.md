@@ -164,7 +164,7 @@ There is still no line. `arping` sends and reads ARP from userspace. The host ke
 
 ### 4. Make the host kernel store the MAC
 
-The kernel writes a neighbor entry when it asks for the MAC itself. `ping` does that. The VM kernel also answers for `192.168.65.14`, with the real MAC of `enp0s1`. One spoofed reply can lose to that answer, so `-c` keeps `ft_malcolm` replying to every matching request until you stop it.
+The kernel writes a neighbor entry when it asks for the MAC itself. `ping` does that. The kernel on VM1 also answers for `192.168.65.14`, with the real MAC of `enp0s1` (`aa:77:fb:2e:e0:ed`). That reply is sent inside the kernel and arrives first. The host stores it and ignores another reply for about a second (`locktime`). Deleting the entry and pinging again repeats the same race, so the line stays `aa:77:fb:2e:e0:ed`. A successful `ping` (an ICMP reply) means the frame went to that real MAC.
 
 On VM1, leave this running:
 
@@ -172,27 +172,68 @@ On VM1, leave this running:
 sudo ./ft_malcolm -c 192.168.65.14 aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
-On the host, while that process is still up:
+On the host, while that process is still up, check the table first:
 
 ```bash
+ip neigh show 192.168.65.14
+```
+
+If this prints a line (`REACHABLE`, `STALE`, or `DELAY`), the kernel already has a MAC for `192.168.65.14`. `ping` then sends ICMP straight to that MAC. There is no broadcast who-has, so `ft_malcolm` stays silent. A later check of a `STALE` entry is a unicast ARP to the stored MAC. The program ignores it: it only accepts a request whose Ethernet destination is `ff:ff:ff:ff:ff:ff`.
+
+Delete the line, then ping:
+
+```bash
+sudo ip neigh del 192.168.65.14 dev enp0s1
 ping -c 1 -W 1 192.168.65.14
 ip neigh show 192.168.65.14
 ```
 
 | Part | Meaning |
 |---|---|
-| `ping -c 1` | One echo request. The kernel sends ARP first, because it has no MAC for this IP |
+| `ip neigh del ... dev enp0s1` | Remove the stored MAC so the next `ping` must ask the network |
+| `ping -c 1` | One echo request. With an empty table the kernel sends a broadcast ARP request first |
 | `-W 1` | Wait at most 1 second for the echo reply |
 
-The neighbor line:
+`sudo` is required for `ip neigh del`. After the delete, VM1 prints `An ARP request has been broadcast` and `Sent an ARP reply packet`.
+
+The line on the host is still the real MAC, and `ping` succeeds:
+
+```text
+64 bytes from 192.168.65.14: icmp_seq=1 ttl=64 time=1.31 ms
+192.168.65.14 dev enp0s1 lladdr aa:77:fb:2e:e0:ed REACHABLE
+```
+
+That ICMP reply means the echo went to `aa:77:fb:2e:e0:ed`. The kernel on VM1 answered the who-has from inside the kernel, so its reply arrived first. The host stored that MAC and, for about a second (`locktime`), dropped the later reply from `ft_malcolm`. Deleting the entry and pinging again starts this race over, so another `ping` does not put `aa:bb:cc:dd:ee:ff` in the table.
+
+Stop VM1's own ARP replies while `ft_malcolm -c` is still running. On VM1:
+
+```bash
+sudo sysctl -w net.ipv4.conf.enp0s1.arp_ignore=8
+```
+
+`arp_ignore=8` means `enp0s1` does not reply to ARP for its own addresses. `ft_malcolm` is then the only answer to who-has `192.168.65.14`.
+
+On the host, delete the real entry and ping again:
+
+```bash
+sudo ip neigh del 192.168.65.14 dev enp0s1
+ping -c 1 -W 1 192.168.65.14
+ip neigh show 192.168.65.14
+```
+
+`ping` gets no ICMP reply: the echo is sent to `aa:bb:cc:dd:ee:ff`, and nothing answers there. The neighbor line is:
 
 ```text
 192.168.65.14 dev enp0s1 lladdr aa:bb:cc:dd:ee:ff REACHABLE
 ```
 
-`lladdr` is the stored MAC. `ping` itself can time out: nothing answers ICMP at `aa:bb:cc:dd:ee:ff`. The check is the `lladdr` line.
+`lladdr` is the stored MAC. The check is this line, not the `ping` reply.
 
-If `lladdr` is the real MAC of VM1, the VM kernel answered last. Run `ping -c 1 -W 1 192.168.65.14` again. `-c` is still running, so `ft_malcolm` answers again.
+Put the kernel replies back when you are done. On VM1:
+
+```bash
+sudo sysctl -w net.ipv4.conf.enp0s1.arp_ignore=0
+```
 
 ### 5. Stop VM1 and read the table once more
 
@@ -202,7 +243,7 @@ Ctrl+C on VM1. It prints `Exiting program...`. On the host, without another `pin
 ip neigh show 192.168.65.14
 ```
 
-The line still shows `aa:bb:cc:dd:ee:ff`. A new `ping` makes the host ask again. The VM kernel then answers with its real MAC, and that MAC replaces the spoofed one.
+The line still shows `aa:bb:cc:dd:ee:ff`. After `arp_ignore` is `0` again, a new `ping` makes the host ask the network. The VM kernel answers with `aa:77:fb:2e:e0:ed`, and that MAC replaces the spoofed one.
 
 ---
 
