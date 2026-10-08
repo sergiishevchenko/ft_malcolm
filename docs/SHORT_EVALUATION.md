@@ -305,7 +305,7 @@ On the host:
 arping -c 1 -I enp0s1 192.168.65.14
 ```
 
-Output includes the Ethernet header, the ARP header, and a hex dump. The program then exits. The long form is `--verbose`.
+Wait a moment. The dump shows up on VM1, in the `ft_malcolm` terminal: the Ethernet header, the ARP header, and a hex dump. The program then exits. The long form is `--verbose`.
 
 ## Continuous
 
