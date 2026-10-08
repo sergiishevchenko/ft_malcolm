@@ -105,38 +105,104 @@ Usage: ft_malcolm [-v] [-c] [-g] [-i interface] <source_ip> <source_mac> <target
 
 ## Spoof
 
-The program waits for an ARP request, sends one reply, and exits. `tcpdump` shows the reply after the request. The request comes from `ping` or `arping`. The program answers when the sender IP is the host IP and the request asks for the VM ip.
+`ft_malcolm` runs on VM1 (`192.168.65.14`). The host (`192.168.65.15`) is the machine whose neighbor table changes. The neighbor table is the ARP cache: an IP and the MAC the kernel will use for it.
 
-On VM1:
+Read it on the host:
+
+```bash
+ip neigh show 192.168.65.14
+```
+
+`arp -a` prints the same table. No line means the host has no MAC stored for `192.168.65.14`.
+
+Arguments of `ft_malcolm`, in order: source IP to impersonate, MAC to store for that IP, host IP, host MAC.
+
+### 1. Start the program on VM1
 
 ```bash
 sudo ./ft_malcolm 192.168.65.14 aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
-On the host:
+It prints `Found available interface: enp0s1` and waits. It sends nothing until it sees a broadcast ARP request from `192.168.65.15` asking who has `192.168.65.14`.
+
+### 2. Send that request from the host
 
 ```bash
 arping -c 1 -I enp0s1 192.168.65.14
 ```
 
-VM1 prints the broadcast request, one reply, and `Exiting program...`. `tcpdump` shows who-has, then `is-at aa:bb:cc:dd:ee:ff`.
+| Part | Meaning |
+|---|---|
+| `-c 1` | Send one request |
+| `-I enp0s1` | Send it from this interface |
+| `192.168.65.14` | The IP to resolve: who has this address |
 
-`arping` does not install a neighbor entry. The host kernel creates one when it asks for the MAC itself. The VM kernel also answers for its own IP with its real MAC, so one reply can lose that race. With `-c` the process stays up until the table shows the spoofed MAC. After exit, another ping lets the VM kernel write its real MAC back.
+`arping` emits "who-has `192.168.65.14`, tell `192.168.65.15`". That is the request `ft_malcolm` is waiting for.
 
-On VM1, leave it running:
+### 3. The program exits. The host table stays empty
+
+On VM1 the process prints the request, sends one reply, and exits:
+
+```text
+An ARP request has been broadcast.
+mac address of request: aa:77:fb:2e:e0:aa
+IP address of request: 192.168.65.15
+Now sending an ARP reply to the target address with spoofed source, please wait...
+Sent an ARP reply packet, you may now check the arp table on the target.
+Exiting program...
+```
+
+`tcpdump` on VM1 shows the request, then `Reply 192.168.65.14 is-at aa:bb:cc:dd:ee:ff`.
+
+On the host, read the table again:
+
+```bash
+ip neigh show 192.168.65.14
+```
+
+There is still no line. `arping` sends and reads ARP from userspace. The host kernel does not copy that reply into its neighbor table. The exit is the normal end of a single reply. The proof at this step is the `tcpdump` line, not `ip neigh`.
+
+### 4. Make the host kernel store the MAC
+
+The kernel writes a neighbor entry when it asks for the MAC itself. `ping` does that. The VM kernel also answers for `192.168.65.14`, with the real MAC of `enp0s1`. One spoofed reply can lose to that answer, so `-c` keeps `ft_malcolm` replying to every matching request until you stop it.
+
+On VM1, leave this running:
 
 ```bash
 sudo ./ft_malcolm -c 192.168.65.14 aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
 ```
 
-On the host:
+On the host, while that process is still up:
 
 ```bash
 ping -c 1 -W 1 192.168.65.14
-arp -a | grep 192.168.65.14
+ip neigh show 192.168.65.14
 ```
 
-The line contains `aa:bb:cc:dd:ee:ff`. If it shows the VM interface MAC, run `ping` again. Then Ctrl+C on VM1 and run `arp -a` once more, with no new ping.
+| Part | Meaning |
+|---|---|
+| `ping -c 1` | One echo request. The kernel sends ARP first, because it has no MAC for this IP |
+| `-W 1` | Wait at most 1 second for the echo reply |
+
+The neighbor line:
+
+```text
+192.168.65.14 dev enp0s1 lladdr aa:bb:cc:dd:ee:ff REACHABLE
+```
+
+`lladdr` is the stored MAC. `ping` itself can time out: nothing answers ICMP at `aa:bb:cc:dd:ee:ff`. The check is the `lladdr` line.
+
+If `lladdr` is the real MAC of VM1, the VM kernel answered last. Run `ping -c 1 -W 1 192.168.65.14` again. `-c` is still running, so `ft_malcolm` answers again.
+
+### 5. Stop VM1 and read the table once more
+
+Ctrl+C on VM1. It prints `Exiting program...`. On the host, without another `ping`:
+
+```bash
+ip neigh show 192.168.65.14
+```
+
+The line still shows `aa:bb:cc:dd:ee:ff`. A new `ping` makes the host ask again. The VM kernel then answers with its real MAC, and that MAC replaces the spoofed one.
 
 ---
 
