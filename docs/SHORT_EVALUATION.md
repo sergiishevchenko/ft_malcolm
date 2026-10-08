@@ -8,6 +8,15 @@
 | spoof mac | `aa:bb:cc:dd:ee:ff` |
 | interface | `enp0s1` |
 
+On each machine, MAC and IPv4:
+
+```bash
+ip -br link
+ip -4 -br addr
+```
+
+`ip -br link` prints the interface and its MAC. `ip -4 -br addr` prints the IPv4 address. The full `ip addr` also lists IPv6 addresses; those are not the MAC.
+
 Second terminal on VM1:
 
 ```bash
