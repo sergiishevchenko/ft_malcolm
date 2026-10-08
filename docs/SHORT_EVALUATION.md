@@ -323,7 +323,13 @@ arping -c 5 -I enp0s1 192.168.65.14
 
 ## Gratuitous ARP
 
-One broadcast reply, then the process exits. `tcpdump` shows `aa:bb:cc:dd:ee:ff > Broadcast` and `Reply 192.168.65.14 is-at aa:bb:cc:dd:ee:ff`. The long form is `--gratuitous`.
+One broadcast reply, then the process exits. In the `tcpdump -vv` terminal on VM1 the line is:
+
+```text
+ARP, Ethernet (len 6), IPv4 (len 4), Reply 192.168.65.14 is-at aa:bb:cc:dd:ee:ff (oui Unknown), length 28
+```
+
+`tcpdump -vv` does not print `> Broadcast`. That form needs `-e`. A later `who-has _gateway` is the machine asking for its router, not this reply. The long form is `--gratuitous`.
 
 ```bash
 sudo ./ft_malcolm -g 192.168.65.14 aa:bb:cc:dd:ee:ff 192.168.65.15 aa:77:fb:2e:e0:aa
